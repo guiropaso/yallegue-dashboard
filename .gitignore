@@ -133,7 +133,6 @@ dist
 
 # Gatsby files
 .cache/
-public
 
 # Storybook build outputs
 .out
@@ -152,3 +151,6 @@ temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Cursor
+.cursor/

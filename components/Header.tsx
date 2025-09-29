@@ -25,9 +25,11 @@ export function Header() {
   const handleSmoothScroll = (href: string) => {
     const element = document.querySelector(href)
     if (element) {
-      const headerHeight = headerRef.current?.offsetHeight || 100
+      const headerHeight = headerRef.current?.offsetHeight || (window.innerWidth < 1024 ? 80 : 100)
       const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
-      const offsetPosition = elementPosition - headerHeight - 20 // 20px extra spacing
+      // Keep desktop behavior as original, optimize mobile only
+      const extraSpacing = window.innerWidth < 1024 ? -430 : 40
+      const offsetPosition = elementPosition - headerHeight - extraSpacing
       
       window.scrollTo({
         top: offsetPosition,
@@ -93,16 +95,16 @@ export function Header() {
         <div className="flex items-center justify-between py-4 px-10">
           {/* Logo - Left side */}
           <div className="flex-shrink-0">
-            <button onClick={() => handleSmoothScroll('#inicio')}>
+            <Link href="/">
               <Image 
                 src="/images/logos/logo.png" 
                 alt="Ya Llegué Logo" 
                 width={140}
                 height={56}
                 priority
-                className="h-14 w-auto hover:opacity-80 transition-opacity duration-200"
+                className="h-14 w-auto hover:opacity-80 transition-opacity duration-200 cursor-pointer"
               />
-            </button>
+            </Link>
           </div>
 
           {/* Desktop Navigation - Centered */}

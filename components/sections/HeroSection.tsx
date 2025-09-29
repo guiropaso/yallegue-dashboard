@@ -1,5 +1,8 @@
+'use client'
+
 import { Button } from "@/components/ui/button"
 import LiquidEther from "@/components/LiquidEther"
+import Link from "next/link"
 
 export function HeroSection() {
   return (
@@ -35,10 +38,22 @@ export function HeroSection() {
           de manera rápida, segura y sin complicaciones.
         </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-gradient-to-r from-[#FF1B1C] via-[#FF4444] to-[#FF6B6B] hover:from-[#FF1B1C]/90 hover:via-[#FF4444]/90 hover:to-[#FF6B6B]/90 text-white px-8 py-4 text-lg font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-              Comenzar ahora
-            </Button>
-            <Button size="lg" variant="outline" className="px-8 py-4 text-lg bg-white/80 backdrop-blur-sm border-gray-300 hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            <Link href="/providersignup">
+              <Button size="lg" className="bg-gradient-to-r from-[#FF1B1C] via-[#FF4444] to-[#FF6B6B] hover:from-[#FF1B1C]/90 hover:via-[#FF4444]/90 hover:to-[#FF6B6B]/90 text-white px-8 py-4 text-lg font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                Quiero ser un proveedor
+              </Button>
+            </Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="px-8 py-4 text-lg bg-white/80 backdrop-blur-sm border-gray-300 hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              onClick={() => {
+                const servicesSection = document.getElementById('servicios');
+                if (servicesSection) {
+                  servicesSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+            >
               Ver servicios
             </Button>
           </div>

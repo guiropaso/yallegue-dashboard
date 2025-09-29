@@ -2,7 +2,8 @@
 
 import ProviderSignupForm from '@/components/ProviderSignupForm'
 import Image from 'next/image'
-import { DollarSign, Clock, Users } from 'lucide-react'
+import Link from 'next/link'
+import { DollarSign, Clock, Users, ChevronRight, Home } from 'lucide-react'
 
 export default function ProviderSignupPage() {
   return (
@@ -49,7 +50,7 @@ export default function ProviderSignupPage() {
             <div className="relative z-10 h-full flex flex-col justify-end p-8 lg:p-12">
               {/* Main Text */}
               <div className="mb-8 px-4 lg:px-0">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight text-center">
                   Accede a nuestra red salvadoreña de profesionales verificados.
                 </h2>
               </div>
@@ -77,9 +78,9 @@ export default function ProviderSignupPage() {
                 </div>
               </div>
 
-              {/* Floating Label - Repositioned for mobile */}
-              <div className="absolute top-4 right-4 lg:top-8 lg:right-8 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 lg:px-4 border border-white/20">
-                <p className="text-white text-xs lg:text-sm font-medium">
+              {/* Floating Label - Hidden on mobile */}
+              <div className="hidden lg:block absolute top-8 right-8 bg-black/50 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
+                <p className="text-white text-sm font-medium">
                   Ya Llegué El Salvador
                 </p>
                 <p className="text-white/70 text-xs">
@@ -91,15 +92,30 @@ export default function ProviderSignupPage() {
 
           {/* Left Section - Form (50%) - Shows second on mobile */}
           <div className="bg-white p-8 lg:p-12 order-2 lg:order-1">
+            {/* Breadcrumb */}
+            <nav className="flex items-center justify-start space-x-2 text-sm mb-8">
+              <Link 
+                href="/" 
+                className="flex items-center space-x-1 text-gray-600 hover:text-[#FF1B1C] transition-colors duration-200"
+              >
+                <Home className="w-4 h-4" />
+                <span>Inicio</span>
+              </Link>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <span className="text-gray-900 font-medium">Registro de proveedores</span>
+            </nav>
+            
             {/* Header */}
             <div className="mb-8 text-center">
-              <Image
-                src="/images/logos/logo.png"
-                alt="Ya Llegué"
-                width={300}
-                height={100}
-                className="h-20 w-auto mb-6 mx-auto"
-              />
+              <Link href="/">
+                <Image
+                  src="/images/logos/logo.png"
+                  alt="Ya Llegué"
+                  width={300}
+                  height={100}
+                  className="h-20 w-auto mb-6 mx-auto hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+                />
+              </Link>
               <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">
                 Únete a nuestra red de profesionales de servicios
               </h1>

@@ -2,7 +2,7 @@
 
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { User, Mail, Phone, FileText, Briefcase, Calendar, MessageSquare, CheckCircle, UserCheck, Loader2, AlertCircle } from 'lucide-react'
 
 interface FormData {
@@ -40,7 +40,25 @@ function ProviderSignupForm() {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
   
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = useForm<FormData>()
+
+  // Handle clicking outside the dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isDropdownOpen])
 
   const submitToWebhook = async (data: FormData) => {
     const webhookUrl = 'https://yallegue.app.n8n.cloud/webhook/989d2ce0-8e56-4f38-b9a0-c38b9253db8c'
@@ -253,7 +271,7 @@ function ProviderSignupForm() {
                 <label className="block text-xs font-medium text-gray-700">
                   Área(s) de experiencia *
                 </label>
-                <div className="relative">
+                <div className="relative" ref={dropdownRef}>
                   <button
                     type="button"
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}

@@ -1,5 +1,6 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { CheckCircle, MessageCircle, Clock, Shield } from "lucide-react"
+import Link from "next/link"
 
 export function FAQSection() {
   const faqs = [
@@ -72,17 +73,19 @@ export function FAQSection() {
             </div>
 
             {/* Call to Action */}
-            <div className="bg-gradient-to-r from-[#FF1B1C]/5 to-[#FF6B6B]/5 rounded-lg p-6 border border-[#FF1B1C]/10">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-[#FF1B1C] to-[#FF6B6B] rounded-lg flex items-center justify-center">
-                  <MessageCircle className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">Conecta en Minutos</h3>
-                  <p className="text-sm text-gray-600">Si eres un proveedor de servicios regístrate gratis y te informaremos cuando tengas un nuevo cliente.</p>
+            <Link href="/providersignup">
+              <div className="bg-gradient-to-r from-[#FF1B1C]/5 to-[#FF6B6B]/5 hover:scale-105 rounded-lg p-6 mt-8 border border-[#FF1B1C]/10 hover:from-[#FF1B1C]/10 hover:to-[#FF6B6B]/10 hover:border-[#FF1B1C]/20 transition-all duration-300 cursor-pointer">
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-12 bg-gradient-to-r from-[#FF1B1C] to-[#FF6B6B] rounded-lg flex items-center justify-center">
+                    <MessageCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900">Conecta en Minutos</h3>
+                    <p className="text-sm text-gray-600">Si eres un proveedor de servicios regístrate gratis dando click acá y te informaremos cuando tengas un nuevo cliente.</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Right Side - FAQ Image */}
