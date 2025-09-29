@@ -42,14 +42,14 @@ export function SecuritySection() {
           {/* Right Side - Content */}
           <div className="space-y-8">
             <div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              <h2 className="text-4xl md:text-5xl text-center md:text-left font-bold text-gray-900 mb-6">
                 ¿Por qué elegir{" "}
                 <span className="bg-gradient-to-r from-[#FF1B1C] via-[#FF4444] to-[#FF6B6B] bg-clip-text text-transparent">
                   Ya Llegué
                 </span>{" "}
                 para tu seguridad?
               </h2>
-              <p className="text-xl text-gray-600 leading-relaxed">
+              <p className="text-xl text-gray-600 leading-relaxed text-center md:text-left">
                 Trabajar con nosotros es simple y flexible: estamos listos para discutir términos convenientes y ofrecerte una de las plataformas más seguras disponibles en el mercado.
               </p>
             </div>

@@ -27,9 +27,9 @@ export function Footer() {
     <footer className="bg-gray-900 text-white py-16 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="grid md:grid-cols-4 gap-8">
-          <div className="col-span-2">
+          <div className="col-span-2 text-center md:text-left">
             {/* Logo */}
-            <div className="mb-4">
+            <div className="mb-4 flex justify-center md:justify-start">
               <Image 
                 src="/images/logos/logo.png" 
                 alt="Ya Llegué Logo" 
@@ -38,11 +38,11 @@ export function Footer() {
                 className="filter brightness-0 invert"
               />
             </div>
-            <p className="text-gray-300 mb-4">
+            <p className="text-gray-300 mb-4 text-center md:text-left">
               Tu ayuda confiable, cuando y donde la necesites. Conectamos clientes con proveedores 
               verificados para servicios de calidad.
             </p>
-            <div className="flex space-x-4">
+            <div className="flex space-x-4 justify-center md:justify-start">
               <Facebook className="w-6 h-6 text-gray-400 hover:text-[#FF1B1C] cursor-pointer" />
               <Instagram className="w-6 h-6 text-gray-400 hover:text-[#FF1B1C] cursor-pointer" />
               <MessageCircle className="w-6 h-6 text-gray-400 hover:text-[#FF1B1C] cursor-pointer" />
