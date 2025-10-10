@@ -1,15 +1,14 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { Toaster } from 'sonner'
+import { AuthProvider } from '@/lib/auth-context'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Ya Llegué - Tu ayuda confiable, cuando y donde la necesites',
-  description: 'Conecta con proveedores verificados en minutos y recibe el servicio que necesitas, de manera rápida, segura y sin complicaciones.',
-  icons: {
-    icon: '/favicon.ico',
-  },
+  title: 'Admin Dashboard',
+  description: 'Ya Llegue Admin Dashboard',
 }
 
 export default function RootLayout({
@@ -18,8 +17,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es">
-      <body className={inter.className}>{children}</body>
+    <html lang="en">
+      <body className={inter.className}>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+        <Toaster />
+      </body>
     </html>
   )
 }
