@@ -64,6 +64,20 @@ function ProvidersContent() {
     await toggleApprovalMutation.mutateAsync({ id, approved })
   }
 
+  // Function to update a specific provider in the local state
+  const updateProviderInState = (updatedProvider: Provider) => {
+    setProviders(prevProviders => 
+      prevProviders.map(provider => 
+        provider.id === updatedProvider.id ? updatedProvider : provider
+      )
+    )
+  }
+
+  // Function to refresh providers data from the database
+  const refreshProvidersData = () => {
+    queryClient.invalidateQueries({ queryKey: ['providers'] })
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -117,6 +131,8 @@ function ProvidersContent() {
       <ProvidersTable 
         data={providers}
         onToggleApproval={handleToggleApproval}
+        onUpdateProvider={updateProviderInState}
+        onRefreshData={refreshProvidersData}
       />
     </div>
   )

@@ -92,7 +92,7 @@ export type Provider = {
   registration_step: number | null
   is_approved: boolean
   email: string | null
-  areas: string[]
+  areas: string[] | null
   years_experience: number
   description: string
   dui_front_url: string | null
@@ -103,9 +103,11 @@ export type Provider = {
 interface ProvidersTableProps {
   data: Provider[]
   onToggleApproval: (id: string, approved: boolean) => Promise<void>
+  onUpdateProvider: (updatedProvider: Provider) => void
+  onRefreshData: () => void
 }
 
-export function ProvidersTable({ data, onToggleApproval }: ProvidersTableProps) {
+export function ProvidersTable({ data, onToggleApproval, onUpdateProvider, onRefreshData }: ProvidersTableProps) {
   console.log('ProvidersTable received data:', data)
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -134,14 +136,29 @@ export function ProvidersTable({ data, onToggleApproval }: ProvidersTableProps) 
       }
 
       if (data && data.length > 0) {
-        // Update the local state to reflect the change
+        const updatedProvider = data[0]
+        
+        // Update the local selectedProvider state
         if (selectedProvider && selectedProvider.id === providerId) {
           setSelectedProvider({
             ...selectedProvider,
             registration_step: parseInt(newStep)
           })
         }
+        
+        // Update the main providers data through the callback
+        const currentProvider = data.find(provider => provider.id === providerId)
+        if (currentProvider) {
+          onUpdateProvider({
+            ...currentProvider,
+            registration_step: parseInt(newStep)
+          })
+        }
+        
         toast.success('Registration step updated successfully')
+        
+        // Refresh the data from the database to get the latest state
+        onRefreshData()
       } else {
         toast.error('Failed to update registration step - no confirmation from database')
       }
@@ -176,14 +193,27 @@ export function ProvidersTable({ data, onToggleApproval }: ProvidersTableProps) 
         
         // Verify the document was actually deleted
         if (updatedDocument[documentType] === null) {
-          // Update the local state to reflect the change
+          // Update the local selectedProvider state
           if (selectedProvider && selectedProvider.id === providerId) {
             setSelectedProvider({
               ...selectedProvider,
               [documentType]: null
             })
           }
+          
+          // Update the main providers data through the callback
+          const currentProvider = data.find(provider => provider.id === providerId)
+          if (currentProvider) {
+            onUpdateProvider({
+              ...currentProvider,
+              [documentType]: null
+            })
+          }
+          
           toast.success(`${documentType.replace('_', ' ')} document deleted successfully`)
+          
+          // Refresh the data from the database to get the latest state
+          onRefreshData()
         } else {
           toast.error(`Failed to delete ${documentType.replace('_', ' ')} document - field still exists`)
         }
@@ -245,17 +275,18 @@ export function ProvidersTable({ data, onToggleApproval }: ProvidersTableProps) 
         accessorKey: "areas",
         header: "Areas",
         cell: ({ row }) => {
-          const areas = row.getValue("areas") as string[]
+          const areas = row.getValue("areas") as string[] | null | undefined
+          const safeAreas = areas || []
           return (
             <div className="flex flex-wrap gap-1">
-              {areas.slice(0, 2).map((area, index) => (
+              {safeAreas.slice(0, 2).map((area, index) => (
                 <Badge key={index} variant="outline" className="text-xs">
                   {area}
                 </Badge>
               ))}
-              {areas.length > 2 && (
+              {safeAreas.length > 2 && (
                 <Badge variant="outline" className="text-xs">
-                  +{areas.length - 2}
+                  +{safeAreas.length - 2}
                 </Badge>
               )}
             </div>
@@ -378,7 +409,7 @@ export function ProvidersTable({ data, onToggleApproval }: ProvidersTableProps) 
       'Email': provider.email || '',
       'DUI': provider.dui || '',
       'WhatsApp': provider.whatsapp || '',
-      'Areas': provider.areas.join(', '),
+      'Areas': provider.areas ? provider.areas.join(', ') : '',
       'Years Experience': provider.years_experience || '',
       'Description': provider.description || '',
       'Has Fixed Job': provider.has_fixed_job ? 'Yes' : 'No',
@@ -571,7 +602,7 @@ export function ProvidersTable({ data, onToggleApproval }: ProvidersTableProps) 
               <div>
                 <label className="text-sm font-medium">Areas of Expertise</label>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {selectedProvider.areas.length > 0 ? (
+                  {selectedProvider.areas && selectedProvider.areas.length > 0 ? (
                     selectedProvider.areas.map((area, index) => (
                       <Badge key={index} variant="outline">{area}</Badge>
                     ))
