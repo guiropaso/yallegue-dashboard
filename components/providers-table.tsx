@@ -44,7 +44,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 
 // Separate component for approval switch to avoid hooks in cell function
@@ -123,45 +122,44 @@ export function ProvidersTable({ data, onToggleApproval, onUpdateProvider, onRef
     try {
       setIsUpdatingStep(true)
       
-      const { data, error } = await supabase
-        .from('providers')
-        .update({ registration_step: parseInt(newStep) })
-        .eq('id', providerId)
-        .select()
+      const response = await fetch(`/api/providers/${providerId}/registration-step`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ registration_step: parseInt(newStep) }),
+      })
 
-      if (error) {
-        console.error('Database error:', error)
-        toast.error(`Failed to update registration step: ${error.message}`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('API error:', errorData)
+        toast.error(`Failed to update registration step: ${errorData.error || 'Unknown error'}`)
         return
       }
 
-      if (data && data.length > 0) {
-        const updatedProvider = data[0]
-        
-        // Update the local selectedProvider state
-        if (selectedProvider && selectedProvider.id === providerId) {
-          setSelectedProvider({
-            ...selectedProvider,
-            registration_step: parseInt(newStep)
-          })
-        }
-        
-        // Update the main providers data through the callback
-        const currentProvider = data.find(provider => provider.id === providerId)
-        if (currentProvider) {
-          onUpdateProvider({
-            ...currentProvider,
-            registration_step: parseInt(newStep)
-          })
-        }
-        
-        toast.success('Registration step updated successfully')
-        
-        // Refresh the data from the database to get the latest state
-        onRefreshData()
-      } else {
-        toast.error('Failed to update registration step - no confirmation from database')
+      const updatedProvider = await response.json()
+      
+      // Update the local selectedProvider state
+      if (selectedProvider && selectedProvider.id === providerId) {
+        setSelectedProvider({
+          ...selectedProvider,
+          registration_step: parseInt(newStep)
+        })
       }
+      
+      // Update the main providers data through the callback
+      const currentProvider = data.find(provider => provider.id === providerId)
+      if (currentProvider) {
+        onUpdateProvider({
+          ...currentProvider,
+          registration_step: parseInt(newStep)
+        })
+      }
+      
+      toast.success('Registration step updated successfully')
+      
+      // Refresh the data from the database to get the latest state
+      onRefreshData()
     } catch (error) {
       console.error('Unexpected error:', error)
       toast.error('Failed to update registration step')
@@ -175,50 +173,44 @@ export function ProvidersTable({ data, onToggleApproval, onUpdateProvider, onRef
     try {
       setIsDeleting(documentType)
       
-      const { data, error } = await supabase
-        .from('provider_documents')
-        .update({ [documentType]: null })
-        .eq('provider_id', providerId)
-        .select()
+      const response = await fetch(`/api/providers/${providerId}/documents?type=${documentType}`, {
+        method: 'DELETE',
+      })
 
-      if (error) {
-        console.error('Database error:', error)
-        toast.error(`Failed to delete ${documentType.replace('_', ' ')} document: ${error.message}`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('API error:', errorData)
+        toast.error(`Failed to delete ${documentType.replace('_', ' ')} document: ${errorData.error || 'Unknown error'}`)
         return
       }
 
-      // Only update UI if we get confirmation from Supabase
-      if (data && data.length > 0) {
-        const updatedDocument = data[0]
-        
-        // Verify the document was actually deleted
-        if (updatedDocument[documentType] === null) {
-          // Update the local selectedProvider state
-          if (selectedProvider && selectedProvider.id === providerId) {
-            setSelectedProvider({
-              ...selectedProvider,
-              [documentType]: null
-            })
-          }
-          
-          // Update the main providers data through the callback
-          const currentProvider = data.find(provider => provider.id === providerId)
-          if (currentProvider) {
-            onUpdateProvider({
-              ...currentProvider,
-              [documentType]: null
-            })
-          }
-          
-          toast.success(`${documentType.replace('_', ' ')} document deleted successfully`)
-          
-          // Refresh the data from the database to get the latest state
-          onRefreshData()
-        } else {
-          toast.error(`Failed to delete ${documentType.replace('_', ' ')} document - field still exists`)
+      const updatedDocument = await response.json()
+      
+      // Verify the document was actually deleted
+      if (updatedDocument && updatedDocument[documentType] === null) {
+        // Update the local selectedProvider state
+        if (selectedProvider && selectedProvider.id === providerId) {
+          setSelectedProvider({
+            ...selectedProvider,
+            [documentType]: null
+          })
         }
+        
+        // Update the main providers data through the callback
+        const currentProvider = data.find(provider => provider.id === providerId)
+        if (currentProvider) {
+          onUpdateProvider({
+            ...currentProvider,
+            [documentType]: null
+          })
+        }
+        
+        toast.success(`${documentType.replace('_', ' ')} document deleted successfully`)
+        
+        // Refresh the data from the database to get the latest state
+        onRefreshData()
       } else {
-        toast.error(`Failed to delete ${documentType.replace('_', ' ')} document - no confirmation from database`)
+        toast.error(`Failed to delete ${documentType.replace('_', ' ')} document - field still exists`)
       }
     } catch (error) {
       console.error('Unexpected error:', error)

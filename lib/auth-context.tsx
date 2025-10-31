@@ -29,24 +29,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [isInitialized, setIsInitialized] = useState(false)
 
-  // Check if user is admin by querying the database using email
+  // Check if user is admin by querying the API using email
   const checkAdminStatus = useCallback(async (userEmail: string): Promise<boolean> => {
     try {
       console.log('AuthContext: Checking admin status for email:', userEmail)
-      const { data, error } = await supabase
-        .from('admins')
-        .select('email')
-        .eq('email', userEmail)
-        .single()
-
-      console.log('AuthContext: Admin check result:', { data, error })
-
-      if (error || !data) {
-        console.log('AuthContext: User is not admin')
+      const response = await fetch(`/api/auth/admin-check?email=${encodeURIComponent(userEmail)}`)
+      
+      if (!response.ok) {
+        console.log('AuthContext: Admin check failed, user is not admin')
         return false
       }
-      console.log('AuthContext: User is admin')
-      return true
+
+      const { isAdmin } = await response.json()
+      console.log('AuthContext: Admin check result:', isAdmin)
+      return isAdmin || false
     } catch (error) {
       console.error('AuthContext: Error checking admin status:', error)
       return false

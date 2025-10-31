@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { supabase } from "@/lib/supabase"
 import { ProvidersTable, type Provider } from "./providers-table"
 import { toast } from "sonner"
 
@@ -17,17 +16,15 @@ function ProvidersContent() {
     queryKey: ['providers'],
     queryFn: async () => {
       console.log('Fetching providers...')
-      const { data, error } = await supabase
-        .from('providers_admin_view')
-        .select('*')
-        .order('id', { ascending: false })
-
-      console.log('Supabase response:', { data, error })
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
+      const response = await fetch('/api/providers')
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch providers')
       }
-      console.log('Returning data:', data)
+      
+      const data = await response.json()
+      console.log('API response:', data)
       return data as Provider[]
     },
   })
@@ -44,19 +41,27 @@ function ProvidersContent() {
   // Toggle approval mutation
   const toggleApprovalMutation = useMutation({
     mutationFn: async ({ id, approved }: { id: string, approved: boolean }) => {
-      const { error } = await supabase
-        .from('providers')
-        .update({ is_approved: approved })
-        .eq('id', id)
+      const response = await fetch(`/api/providers/${id}/approval`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ approved }),
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update approval status')
+      }
+
+      return response.json()
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] })
       toast.success("Approval status updated")
     },
-    onError: () => {
-      toast.error("Failed to update approval status")
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update approval status")
     },
   })
 
