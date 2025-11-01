@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabase-server'
 
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -31,7 +34,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ isAdmin: !!data })
+    return NextResponse.json({ isAdmin: !!data }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
+    })
   } catch (error) {
     console.error('Unexpected error checking admin status:', error)
     return NextResponse.json(
