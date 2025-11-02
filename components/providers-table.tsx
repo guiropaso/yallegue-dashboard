@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   ColumnDef,
   flexRender,
@@ -116,6 +116,8 @@ export function ProvidersTable({ data, onToggleApproval, onUpdateProvider, onRef
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const [isUpdatingStep, setIsUpdatingStep] = useState(false)
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({})
+  const [loadingUrls, setLoadingUrls] = useState<Set<string>>(new Set())
 
   // Function to update registration step
   const updateRegistrationStep = async (providerId: string, newStep: string) => {
@@ -168,6 +170,79 @@ export function ProvidersTable({ data, onToggleApproval, onUpdateProvider, onRef
     }
   }
 
+  // Function to fetch signed URL for a document path
+  const fetchSignedUrl = async (path: string, documentType: string): Promise<string | null> => {
+    if (!path) return null
+    
+    // Check if we already have this URL
+    const cacheKey = `${path}_${documentType}`
+    if (signedUrls[cacheKey]) {
+      return signedUrls[cacheKey]
+    }
+
+    // Check if already loading
+    if (loadingUrls.has(cacheKey)) {
+      return null
+    }
+
+    try {
+      setLoadingUrls(prev => new Set(prev).add(cacheKey))
+      const response = await fetch(`/api/documents/signed-url?path=${encodeURIComponent(path)}`)
+      
+      if (!response.ok) {
+        console.error('Failed to generate signed URL')
+        return null
+      }
+
+      const { signedUrl } = await response.json()
+      
+      // Cache the signed URL
+      setSignedUrls(prev => ({
+        ...prev,
+        [cacheKey]: signedUrl
+      }))
+      
+      return signedUrl
+    } catch (error) {
+      console.error('Error fetching signed URL:', error)
+      return null
+    } finally {
+      setLoadingUrls(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(cacheKey)
+        return newSet
+      })
+    }
+  }
+
+  // Effect to preload signed URLs when provider is selected
+  useEffect(() => {
+    if (!selectedProvider || !isDrawerOpen) {
+      // Clear signed URLs when drawer closes or provider changes
+      setSignedUrls({})
+      return
+    }
+
+    const loadSignedUrls = async () => {
+      const urls: Array<Promise<string | null>> = []
+      
+      if (selectedProvider.dui_front_url) {
+        urls.push(fetchSignedUrl(selectedProvider.dui_front_url, 'dui_front_url'))
+      }
+      if (selectedProvider.dui_back_url) {
+        urls.push(fetchSignedUrl(selectedProvider.dui_back_url, 'dui_back_url'))
+      }
+      if (selectedProvider.police_record_url) {
+        urls.push(fetchSignedUrl(selectedProvider.police_record_url, 'police_record_url'))
+      }
+
+      await Promise.all(urls)
+    }
+
+    loadSignedUrls()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProvider?.id, isDrawerOpen, selectedProvider?.dui_front_url, selectedProvider?.dui_back_url, selectedProvider?.police_record_url])
+
   // Function to delete a specific document URL
   const deleteDocument = async (providerId: string, documentType: 'dui_front_url' | 'dui_back_url' | 'police_record_url') => {
     try {
@@ -188,6 +263,19 @@ export function ProvidersTable({ data, onToggleApproval, onUpdateProvider, onRef
       
       // Verify the document was actually deleted
       if (updatedDocument && updatedDocument[documentType] === null) {
+        // Clear the signed URL from cache
+        if (selectedProvider) {
+          const oldPath = selectedProvider[documentType]
+          if (oldPath) {
+            const cacheKey = `${oldPath}_${documentType}`
+            setSignedUrls(prev => {
+              const newUrls = { ...prev }
+              delete newUrls[cacheKey]
+              return newUrls
+            })
+          }
+        }
+
         // Update the local selectedProvider state
         if (selectedProvider && selectedProvider.id === providerId) {
           setSelectedProvider({
@@ -617,90 +705,126 @@ export function ProvidersTable({ data, onToggleApproval, onUpdateProvider, onRef
               <div>
                 <label className="text-sm font-medium">Documents</label>
                 <div className="space-y-3 mt-2">
-                  {selectedProvider.dui_front_url && (
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-sm font-medium text-gray-700">DUI Front</span>
-                        <a 
-                          href={selectedProvider.dui_front_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:underline hover:text-blue-800"
+                  {selectedProvider.dui_front_url && (() => {
+                    const cacheKey = `${selectedProvider.dui_front_url}_dui_front_url`
+                    const signedUrl = signedUrls[cacheKey]
+                    const isLoading = loadingUrls.has(cacheKey)
+                    const fileName = selectedProvider.dui_front_url.split('/').pop() || 'Document'
+                    return (
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm font-medium text-gray-700">DUI Front</span>
+                          {isLoading ? (
+                            <span className="text-sm text-gray-500">Loading...</span>
+                          ) : signedUrl ? (
+                            <a 
+                              href={signedUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:underline hover:text-blue-800"
+                            >
+                              {fileName}
+                            </a>
+                          ) : (
+                            <span className="text-sm text-gray-500">{fileName}</span>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-800 hover:bg-red-50"
+                          onClick={() => deleteDocument(selectedProvider.id, 'dui_front_url')}
+                          disabled={isDeleting === 'dui_front_url'}
                         >
-                          {selectedProvider.dui_front_url.split('/').pop()}
-                        </a>
+                          {isDeleting === 'dui_front_url' ? (
+                            <div className="h-4 w-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-800 hover:bg-red-50"
-                        onClick={() => deleteDocument(selectedProvider.id, 'dui_front_url')}
-                        disabled={isDeleting === 'dui_front_url'}
-                      >
-                        {isDeleting === 'dui_front_url' ? (
-                          <div className="h-4 w-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                  {selectedProvider.dui_back_url && (
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-sm font-medium text-gray-700">DUI Back</span>
-                        <a 
-                          href={selectedProvider.dui_back_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:underline hover:text-blue-800"
+                    )
+                  })()}
+                  {selectedProvider.dui_back_url && (() => {
+                    const cacheKey = `${selectedProvider.dui_back_url}_dui_back_url`
+                    const signedUrl = signedUrls[cacheKey]
+                    const isLoading = loadingUrls.has(cacheKey)
+                    const fileName = selectedProvider.dui_back_url.split('/').pop() || 'Document'
+                    return (
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm font-medium text-gray-700">DUI Back</span>
+                          {isLoading ? (
+                            <span className="text-sm text-gray-500">Loading...</span>
+                          ) : signedUrl ? (
+                            <a 
+                              href={signedUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:underline hover:text-blue-800"
+                            >
+                              {fileName}
+                            </a>
+                          ) : (
+                            <span className="text-sm text-gray-500">{fileName}</span>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-800 hover:bg-red-50"
+                          onClick={() => deleteDocument(selectedProvider.id, 'dui_back_url')}
+                          disabled={isDeleting === 'dui_back_url'}
                         >
-                          {selectedProvider.dui_back_url.split('/').pop()}
-                        </a>
+                          {isDeleting === 'dui_back_url' ? (
+                            <div className="h-4 w-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-800 hover:bg-red-50"
-                        onClick={() => deleteDocument(selectedProvider.id, 'dui_back_url')}
-                        disabled={isDeleting === 'dui_back_url'}
-                      >
-                        {isDeleting === 'dui_back_url' ? (
-                          <div className="h-4 w-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                  {selectedProvider.police_record_url && (
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-sm font-medium text-gray-700">Police Record</span>
-                        <a 
-                          href={selectedProvider.police_record_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:underline hover:text-blue-800"
+                    )
+                  })()}
+                  {selectedProvider.police_record_url && (() => {
+                    const cacheKey = `${selectedProvider.police_record_url}_police_record_url`
+                    const signedUrl = signedUrls[cacheKey]
+                    const isLoading = loadingUrls.has(cacheKey)
+                    const fileName = selectedProvider.police_record_url.split('/').pop() || 'Document'
+                    return (
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm font-medium text-gray-700">Police Record</span>
+                          {isLoading ? (
+                            <span className="text-sm text-gray-500">Loading...</span>
+                          ) : signedUrl ? (
+                            <a 
+                              href={signedUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:underline hover:text-blue-800"
+                            >
+                              {fileName}
+                            </a>
+                          ) : (
+                            <span className="text-sm text-gray-500">{fileName}</span>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-800 hover:bg-red-50"
+                          onClick={() => deleteDocument(selectedProvider.id, 'police_record_url')}
+                          disabled={isDeleting === 'police_record_url'}
                         >
-                          {selectedProvider.police_record_url.split('/').pop()}
-                        </a>
+                          {isDeleting === 'police_record_url' ? (
+                            <div className="h-4 w-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-800 hover:bg-red-50"
-                        onClick={() => deleteDocument(selectedProvider.id, 'police_record_url')}
-                        disabled={isDeleting === 'police_record_url'}
-                      >
-                        {isDeleting === 'police_record_url' ? (
-                          <div className="h-4 w-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  )}
+                    )
+                  })()}
                   {!selectedProvider.dui_front_url && !selectedProvider.dui_back_url && !selectedProvider.police_record_url && (
                     <div className="p-3 bg-gray-50 rounded-lg border">
                       <span className="text-sm text-muted-foreground">No documents uploaded</span>
