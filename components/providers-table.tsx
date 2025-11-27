@@ -56,6 +56,50 @@ function ApprovalSwitch({
 }) {
   const [isLoading, setIsLoading] = useState(false)
   
+  // Function to call the webhook with provider name and email
+  const callWebhook = async (name: string, email: string | null): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await fetch('https://n8n.yalleguesv.com/webhook/23eec51e-53c2-4f62-8e72-5047e2a7fc24', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          email: email || '',
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        return {
+          success: false,
+          message: `Webhook request failed with status ${response.status}: ${errorText || 'Unknown error'}`
+        }
+      }
+
+      // Try to parse JSON response if available
+      let result
+      const contentType = response.headers.get('content-type')
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json()
+      } else {
+        result = await response.text()
+      }
+
+      return {
+        success: true,
+        message: 'Webhook notification sent successfully'
+      }
+    } catch (error) {
+      console.error('Error calling webhook:', error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      }
+    }
+  }
+  
   return (
     <div className="flex items-center space-x-2">
       <Switch
@@ -63,8 +107,24 @@ function ApprovalSwitch({
         onCheckedChange={async (checked) => {
           setIsLoading(true)
           try {
+            // First, wait for Supabase confirmation
             await onToggleApproval(provider.id, checked)
-            toast.success(`Provider ${checked ? 'approved' : 'disapproved'} successfully`)
+            
+            // Only call webhook when approving (checked = true)
+            if (checked) {
+              const fullName = `${provider.first_name || ''} ${provider.last_name || ''}`.trim() || 'Unknown'
+              // Wait for webhook response
+              const webhookResult = await callWebhook(fullName, provider.email)
+              
+              // Display toast based on webhook result
+              if (webhookResult.success) {
+                toast.success(`Provider approved and ${webhookResult.message}`)
+              } else {
+                toast.error(`Provider approved, but webhook failed: ${webhookResult.message}`)
+              }
+            } else {
+              toast.success('Provider disapproved successfully')
+            }
           } catch (error) {
             console.error('Error toggling approval:', error)
             toast.error("Failed to update approval status")

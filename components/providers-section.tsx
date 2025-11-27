@@ -58,10 +58,11 @@ function ProvidersContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] })
-      toast.success("Approval status updated")
+      // Toast messages are handled in ApprovalSwitch component
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to update approval status")
+      // Error toast is handled in ApprovalSwitch component
+      console.error('Approval mutation error:', error)
     },
   })
 
